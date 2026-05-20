@@ -9,20 +9,22 @@ import {
     createUserWithEmailAndPassword, 
     signInWithEmailAndPassword, 
     signOut, 
-    onAuthStateChanged,
-    ref,
-    push,
-    set,
-    onValue,
-    query,
-    orderByChild,
-    equalTo,
-    remove
+    onAuthStateChanged, 
+    ref, 
+    push, 
+    set, 
+    onValue, 
+    query, 
+    orderByChild, 
+    equalTo, 
+    remove,
+    verificarSiEsAdmin,
+    hacerAdmin
 } from './config.js';
 
-/* ========================================
-   VARIABLES GLOBALES
-   ======================================== */
+// ========================================
+// VARIABLES GLOBALES
+// ========================================
 
 let usuarioActual = null;
 let productosActuales = [];
@@ -43,8 +45,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // ========================================
 // AUTENTICACIÓN
 // ========================================
-
-import { verificarSiEsAdmin, hacerAdmin } from './config.js';
 
 function verificarUsuarioLogueado() {
     onAuthStateChanged(auth, async (user) => {
