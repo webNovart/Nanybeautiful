@@ -1,7 +1,24 @@
 /* ========================================
-   BEAUTY STORE - LÓGICA PRINCIPAL
+   BEAUTY STORE - LÓGICA PRINCIPAL (v10+)
    Base de Datos: Firebase Realtime Database
    ======================================== */
+
+import { 
+    auth, 
+    database, 
+    createUserWithEmailAndPassword, 
+    signInWithEmailAndPassword, 
+    signOut, 
+    onAuthStateChanged,
+    ref,
+    push,
+    set,
+    onValue,
+    query,
+    orderByChild,
+    equalTo,
+    remove
+} from './config.js';
 
 // ========================================
 // VARIABLES GLOBALES
@@ -32,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ========================================
 
 function verificarUsuarioLogueado() {
-    auth.onAuthStateChanged(function(user) {
+    onAuthStateChanged(auth, (user) => {
         if (user) {
             usuarioActual = user;
             document.getElementById('loginBtn').style.display = 'none';
@@ -54,12 +71,11 @@ document.getElementById('loginForm')?.addEventListener('submit', function(e) {
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
     
-    auth.signInWithEmailAndPassword(email, password)
+    signInWithEmailAndPassword(auth, email, password)
         .then((userCredential) => {
             mostrarNotificacion('¡Bienvenido! Sesión iniciada correctamente', 'success');
             cerrarModal('loginModal');
             usuarioActual = userCredential.user;
-            // Cargar productos del usuario
             cargarProductos();
         })
         .catch((error) => {
@@ -85,12 +101,10 @@ document.getElementById('signupForm')?.addEventListener('submit', function(e) {
         return;
     }
     
-    auth.createUserWithEmailAndPassword(email, password)
+    createUserWithEmailAndPassword(auth, email, password)
         .then((userCredential) => {
             mostrarNotificacion('¡Cuenta creada! Ahora inicia sesión', 'success');
-            // Cambiar a formulario de login
             toggleForm();
-            // Limpiar formulario
             document.getElementById('signupForm').reset();
         })
         .catch((error) => {
@@ -123,7 +137,7 @@ function toggleForm() {
 
 // Logout
 document.getElementById('logoutBtn')?.addEventListener('click', function() {
-    auth.signOut().then(() => {
+    signOut(auth).then(() => {
         mostrarNotificacion('Sesión cerrada', 'info');
         usuarioActual = null;
         cambiarSeccion('tiendaSection', 'tiendaBtn');
@@ -137,7 +151,6 @@ document.getElementById('logoutBtn')?.addEventListener('click', function() {
 // ========================================
 
 function configurarEventListeners() {
-    // Botones de navegación
     document.getElementById('tiendaBtn').addEventListener('click', () => {
         cambiarSeccion('tiendaSection', 'tiendaBtn');
     });
@@ -155,21 +168,16 @@ function configurarEventListeners() {
         abrirModal('loginModal');
     });
     
-    // Formulario de producto
     document.getElementById('formProducto').addEventListener('submit', agregarProducto);
-    
-    // Búsqueda y filtro
     document.getElementById('searchInput').addEventListener('input', filtrarProductos);
     document.getElementById('categoryFilter').addEventListener('change', filtrarProductos);
     
-    // Modales
     document.querySelectorAll('.close').forEach(close => {
         close.addEventListener('click', (e) => {
             e.target.closest('.modal').classList.remove('show');
         });
     });
     
-    // Cerrar modal al hacer click fuera
     window.addEventListener('click', (e) => {
         if (e.target.classList.contains('modal')) {
             e.target.classList.remove('show');
@@ -178,16 +186,9 @@ function configurarEventListeners() {
 }
 
 function cambiarSeccion(seccionId, botonId) {
-    // Ocultar todas las secciones
     document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
-    
-    // Desactivar todos los botones nav
     document.querySelectorAll('.btn-nav').forEach(btn => btn.classList.remove('active'));
-    
-    // Mostrar sección seleccionada
     document.getElementById(seccionId).classList.add('active');
-    
-    // Activar botón
     document.getElementById(botonId).classList.add('active');
 }
 
@@ -207,7 +208,6 @@ function cerrarModal(modalId) {
 // GESTIÓN DE PRODUCTOS
 // ========================================
 
-// Agregar Producto
 async function agregarProducto(e) {
     e.preventDefault();
     
@@ -229,9 +229,9 @@ async function agregarProducto(e) {
     };
     
     try {
-        // Guardar en Firebase
-        const ref = database.ref('productos').push();
-        await ref.set(producto);
+        const productosRef = ref(database, 'productos');
+        const nuevoProductoRef = push(productosRef);
+        await set(nuevoProductoRef, producto);
         
         mostrarNotificacion('✅ Producto agregado exitosamente', 'success');
         document.getElementById('formProducto').reset();
@@ -242,7 +242,6 @@ async function agregarProducto(e) {
     }
 }
 
-// Cargar Productos (Vista Tienda)
 function cargarProductos() {
     const productosGrid = document.getElementById('productosGrid');
     
@@ -253,7 +252,8 @@ function cargarProductos() {
         </div>
     `;
     
-    database.ref('productos').on('value', (snapshot) => {
+    const productosRef = ref(database, 'productos');
+    onValue(productosRef, (snapshot) => {
         productosActuales = [];
         const data = snapshot.val();
         
@@ -271,7 +271,6 @@ function cargarProductos() {
     });
 }
 
-// Mostrar Productos
 function mostrarProductos(productos) {
     const productosGrid = document.getElementById('productosGrid');
     const sinProductos = document.getElementById('sinProductos');
@@ -305,7 +304,6 @@ function mostrarProductos(productos) {
     `).join('');
 }
 
-// Abrir Detalle Producto
 function abrirDetalleProducto(productoId) {
     const producto = productosActuales.find(p => p.id === productoId);
     
@@ -324,7 +322,6 @@ function abrirDetalleProducto(productoId) {
     abrirModal('detalleModal');
 }
 
-// Filtrar Productos
 function filtrarProductos() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     const categoryFilter = document.getElementById('categoryFilter').value;
@@ -357,7 +354,10 @@ function cargarProductosAdmin() {
         </div>
     `;
     
-    database.ref('productos').orderByChild('usuarioId').equalTo(usuarioActual.uid).on('value', (snapshot) => {
+    const productosRef = ref(database, 'productos');
+    const productosQuery = query(productosRef, orderByChild('usuarioId'), equalTo(usuarioActual.uid));
+    
+    onValue(productosQuery, (snapshot) => {
         const productos = [];
         const data = snapshot.val();
         
@@ -399,10 +399,12 @@ function cargarProductosAdmin() {
     });
 }
 
-// Editar Producto
 function editarProducto(productoId) {
-    database.ref(`productos/${productoId}`).once('value', (snapshot) => {
+    const productoRef = ref(database, `productos/${productoId}`);
+    onValue(productoRef, (snapshot) => {
         const producto = snapshot.val();
+        
+        if (!producto) return;
         
         document.getElementById('nombre').value = producto.nombre;
         document.getElementById('categoria').value = producto.categoria;
@@ -411,7 +413,6 @@ function editarProducto(productoId) {
         document.getElementById('imagen').value = producto.imagen;
         document.getElementById('linkCompra').value = producto.linkCompra;
         
-        // Cambiar el evento submit temporalmente
         const form = document.getElementById('formProducto');
         const botonSubmit = form.querySelector('button[type="submit"]');
         
@@ -433,7 +434,7 @@ function editarProducto(productoId) {
             };
             
             try {
-                await database.ref(`productos/${productoId}`).set(productoActualizado);
+                await set(ref(database, `productos/${productoId}`), productoActualizado);
                 mostrarNotificacion('✅ Producto actualizado correctamente', 'success');
                 form.reset();
                 botonSubmit.innerHTML = '<i class="fas fa-plus"></i> Agregar Producto';
@@ -444,13 +445,12 @@ function editarProducto(productoId) {
                 mostrarNotificacion('Error al actualizar: ' + error.message, 'error');
             }
         };
-    });
+    }, { once: true });
 }
 
-// Eliminar Producto
 function eliminarProducto(productoId) {
     if (confirm('¿Estás seguro que deseas eliminar este producto?')) {
-        database.ref(`productos/${productoId}`).remove()
+        remove(ref(database, `productos/${productoId}`))
             .then(() => {
                 mostrarNotificacion('✅ Producto eliminado', 'success');
                 cargarProductosAdmin();
@@ -474,39 +474,6 @@ function mostrarNotificacion(mensaje, tipo = 'info') {
     setTimeout(() => {
         notificacion.classList.remove('show');
     }, 3000);
-}
-
-// ========================================
-// DEMO - Datos de ejemplo
-// ========================================
-
-function cargarDatosDemo() {
-    const productosDemo = [
-        {
-            nombre: "Labial Rojo Premium",
-            categoria: "Maquillaje",
-            precio: 29.99,
-            descripcion: "Labial de larga duración con fórmula hidratante",
-            imagen: "https://via.placeholder.com/400x300?text=Labial+Rojo",
-            linkCompra: "https://amazon.com/ejemplo",
-            usuarioId: "demo",
-            email: "demo@example.com"
-        },
-        {
-            nombre: "Sérum Facial Premium",
-            categoria: "Cuidado de la Piel",
-            precio: 45.99,
-            descripcion: "Sérum anti-envejecimiento con vitamina C",
-            imagen: "https://via.placeholder.com/400x300?text=Serum",
-            linkCompra: "https://amazon.com/ejemplo",
-            usuarioId: "demo",
-            email: "demo@example.com"
-        }
-    ];
-    
-    productosDemo.forEach(producto => {
-        database.ref('productos').push().set(producto);
-    });
 }
 
 console.log('✅ Script cargado correctamente');
