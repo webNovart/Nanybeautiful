@@ -1,26 +1,7 @@
 /* ========================================
-   BEAUTY STORE - LÓGICA PRINCIPAL (v10+)
-   Base de Datos: Firebase Realtime Database
+   BEAUTY STORE - LÓGICA PRINCIPAL
+   Versión Compatible (sin módulos)
    ======================================== */
-
-import { 
-    auth, 
-    database, 
-    createUserWithEmailAndPassword, 
-    signInWithEmailAndPassword, 
-    signOut, 
-    onAuthStateChanged, 
-    ref, 
-    push, 
-    set, 
-    onValue, 
-    query, 
-    orderByChild, 
-    equalTo, 
-    remove,
-    verificarSiEsAdmin,
-    hacerAdmin
-} from './config.js';
 
 // ========================================
 // VARIABLES GLOBALES
@@ -47,14 +28,14 @@ document.addEventListener('DOMContentLoaded', function() {
 // ========================================
 
 function verificarUsuarioLogueado() {
-    onAuthStateChanged(auth, async (user) => {
+    auth.onAuthStateChanged(async (user) => {
         if (user) {
             usuarioActual = user;
             
             // Verificar si es admin
             esAdmin = await verificarSiEsAdmin(user.email);
             
-            // Mostrar/ocultar botón admin basado en permisos
+            // Mostrar/ocultar botón admin
             const adminBtn = document.getElementById('adminBtn');
             if (esAdmin) {
                 adminBtn.style.display = 'inline-flex';
@@ -89,7 +70,7 @@ document.getElementById('loginForm')?.addEventListener('submit', function(e) {
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
     
-    signInWithEmailAndPassword(auth, email, password)
+    auth.signInWithEmailAndPassword(email, password)
         .then(async (userCredential) => {
             mostrarNotificacion('¡Bienvenido! Sesión iniciada correctamente', 'success');
             cerrarModal('loginModal');
@@ -120,7 +101,7 @@ document.getElementById('signupForm')?.addEventListener('submit', function(e) {
         return;
     }
     
-    createUserWithEmailAndPassword(auth, email, password)
+    auth.createUserWithEmailAndPassword(email, password)
         .then((userCredential) => {
             mostrarNotificacion('¡Cuenta creada! Ahora inicia sesión', 'success');
             toggleForm();
@@ -156,7 +137,7 @@ function toggleForm() {
 
 // Logout
 document.getElementById('logoutBtn')?.addEventListener('click', function() {
-    signOut(auth).then(() => {
+    auth.signOut().then(() => {
         mostrarNotificacion('Sesión cerrada', 'info');
         usuarioActual = null;
         esAdmin = false;
@@ -230,7 +211,7 @@ function cerrarModal(modalId) {
 }
 
 // ========================================
-// GESTIÓN DE PRODUCTOS (SOLO ADMIN)
+// GESTIÓN DE PRODUCTOS
 // ========================================
 
 async function agregarProducto(e) {
@@ -259,9 +240,7 @@ async function agregarProducto(e) {
     };
     
     try {
-        const productosRef = ref(database, 'productos');
-        const nuevoProductoRef = push(productosRef);
-        await set(nuevoProductoRef, producto);
+        database.ref('productos').push().set(producto);
         
         mostrarNotificacion('✅ Producto agregado exitosamente', 'success');
         document.getElementById('formProducto').reset();
@@ -282,8 +261,7 @@ function cargarProductos() {
         </div>
     `;
     
-    const productosRef = ref(database, 'productos');
-    onValue(productosRef, (snapshot) => {
+    database.ref('productos').on('value', (snapshot) => {
         productosActuales = [];
         const data = snapshot.val();
         
@@ -384,10 +362,7 @@ function cargarProductosAdmin() {
         </div>
     `;
     
-    const productosRef = ref(database, 'productos');
-    const productosQuery = query(productosRef, orderByChild('usuarioId'), equalTo(usuarioActual.uid));
-    
-    onValue(productosQuery, (snapshot) => {
+    database.ref('productos').orderByChild('usuarioId').equalTo(usuarioActual.uid).on('value', (snapshot) => {
         const productos = [];
         const data = snapshot.val();
         
@@ -430,8 +405,7 @@ function cargarProductosAdmin() {
 }
 
 function editarProducto(productoId) {
-    const productoRef = ref(database, `productos/${productoId}`);
-    onValue(productoRef, (snapshot) => {
+    database.ref(`productos/${productoId}`).once('value', (snapshot) => {
         const producto = snapshot.val();
         
         if (!producto) return;
@@ -464,7 +438,7 @@ function editarProducto(productoId) {
             };
             
             try {
-                await set(ref(database, `productos/${productoId}`), productoActualizado);
+                database.ref(`productos/${productoId}`).set(productoActualizado);
                 mostrarNotificacion('✅ Producto actualizado correctamente', 'success');
                 form.reset();
                 botonSubmit.innerHTML = '<i class="fas fa-plus"></i> Agregar Producto';
@@ -475,12 +449,12 @@ function editarProducto(productoId) {
                 mostrarNotificacion('Error al actualizar: ' + error.message, 'error');
             }
         };
-    }, { once: true });
+    });
 }
 
 function eliminarProducto(productoId) {
     if (confirm('¿Estás seguro que deseas eliminar este producto?')) {
-        remove(ref(database, `productos/${productoId}`))
+        database.ref(`productos/${productoId}`).remove()
             .then(() => {
                 mostrarNotificacion('✅ Producto eliminado', 'success');
                 cargarProductosAdmin();
