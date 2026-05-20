@@ -29,3 +29,30 @@ const database = getDatabase(app);
 export { auth, database, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, ref, push, set, onValue, query, orderByChild, equalTo, remove };
 
 console.log('✅ Firebase configurado correctamente con NanyBeauty');
+
+// ========================================
+// FUNCIONES DE ADMINISTRADOR
+// ========================================
+
+export async function hacerAdmin(email) {
+    try {
+        const adminRef = ref(database, `admins/${email.replace(/\./g, '_')}`);
+        await set(adminRef, {
+            email: email,
+            fechaCreacion: new Date().toISOString(),
+            activo: true
+        });
+        console.log('✅ Usuario hecho admin:', email);
+    } catch (error) {
+        console.error('Error al hacer admin:', error);
+    }
+}
+
+export async function verificarSiEsAdmin(email) {
+    return new Promise((resolve) => {
+        const adminRef = ref(database, `admins/${email.replace(/\./g, '_')}`);
+        onValue(adminRef, (snapshot) => {
+            resolve(snapshot.exists());
+        }, { once: true });
+    });
+}
