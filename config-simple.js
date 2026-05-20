@@ -1,26 +1,7 @@
 /* ========================================
    CONFIGURACIÓN FIREBASE - NanyBeauty
+   Versión Compatible (sin módulos)
    ======================================== */
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { 
-    getAuth, 
-    createUserWithEmailAndPassword, 
-    signInWithEmailAndPassword, 
-    signOut, 
-    onAuthStateChanged 
-} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-import { 
-    getDatabase, 
-    ref, 
-    push, 
-    set, 
-    onValue, 
-    query, 
-    orderByChild, 
-    equalTo, 
-    remove 
-} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
 
 // Tu configuración de Firebase
 const firebaseConfig = {
@@ -35,25 +16,25 @@ const firebaseConfig = {
 };
 
 // Inicializar Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const database = getDatabase(app);
+firebase.initializeApp(firebaseConfig);
+
+// Referencias globales
+const auth = firebase.auth();
+const database = firebase.database();
 
 // Función para verificar si es admin
 async function verificarSiEsAdmin(email) {
     return new Promise((resolve) => {
-        const adminRef = ref(database, `admins/${email.replace(/\./g, '_')}`);
-        onValue(adminRef, (snapshot) => {
+        database.ref(`admins/${email.replace(/\./g, '_')}`).once('value', (snapshot) => {
             resolve(snapshot.exists());
-        }, { once: true });
+        });
     });
 }
 
 // Función para hacer admin
 async function hacerAdmin(email) {
     try {
-        const adminRef = ref(database, `admins/${email.replace(/\./g, '_')}`);
-        await set(adminRef, {
+        await database.ref(`admins/${email.replace(/\./g, '_')}`).set({
             email: email,
             fechaCreacion: new Date().toISOString(),
             activo: true
@@ -63,25 +44,5 @@ async function hacerAdmin(email) {
         console.error('Error al hacer admin:', error);
     }
 }
-
-// Exportar todo
-export { 
-    auth, 
-    database, 
-    createUserWithEmailAndPassword, 
-    signInWithEmailAndPassword, 
-    signOut, 
-    onAuthStateChanged, 
-    ref, 
-    push, 
-    set, 
-    onValue, 
-    query, 
-    orderByChild, 
-    equalTo, 
-    remove,
-    verificarSiEsAdmin,
-    hacerAdmin
-};
 
 console.log('✅ Firebase configurado correctamente con NanyBeauty');
