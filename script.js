@@ -20,12 +20,13 @@ import {
     remove
 } from './config.js';
 
-// ========================================
-// VARIABLES GLOBALES
-// ========================================
+/* ========================================
+   VARIABLES GLOBALES
+   ======================================== */
 
 let usuarioActual = null;
 let productosActuales = [];
+let esAdmin = false;
 
 // ========================================
 // INICIALIZACIÓN
@@ -34,13 +35,8 @@ let productosActuales = [];
 document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ Aplicación iniciada');
     
-    // Verificar si el usuario está logueado
     verificarUsuarioLogueado();
-    
-    // Configurar event listeners
     configurarEventListeners();
-    
-    // Cargar productos
     cargarProductos();
 });
 
@@ -48,17 +44,39 @@ document.addEventListener('DOMContentLoaded', function() {
 // AUTENTICACIÓN
 // ========================================
 
+import { verificarSiEsAdmin, hacerAdmin } from './config.js';
+
 function verificarUsuarioLogueado() {
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
             usuarioActual = user;
+            
+            // Verificar si es admin
+            esAdmin = await verificarSiEsAdmin(user.email);
+            
+            // Mostrar/ocultar botón admin basado en permisos
+            const adminBtn = document.getElementById('adminBtn');
+            if (esAdmin) {
+                adminBtn.style.display = 'inline-flex';
+                adminBtn.innerHTML = '<i class="fas fa-crown"></i> Admin';
+                adminBtn.style.color = '#fbbf24';
+                adminBtn.title = 'Eres Administrador';
+            } else {
+                adminBtn.style.display = 'none';
+            }
+            
             document.getElementById('loginBtn').style.display = 'none';
             document.getElementById('logoutBtn').style.display = 'inline-flex';
+            document.getElementById('logoutBtn').innerHTML = `<i class="fas fa-sign-out-alt"></i> ${user.email}`;
+            
             console.log('✅ Usuario logueado:', user.email);
+            console.log('🔐 ¿Es Admin?:', esAdmin);
         } else {
             usuarioActual = null;
+            esAdmin = false;
             document.getElementById('loginBtn').style.display = 'inline-flex';
             document.getElementById('logoutBtn').style.display = 'none';
+            document.getElementById('adminBtn').style.display = 'none';
             console.log('❌ Usuario no logueado');
         }
     });
@@ -72,10 +90,11 @@ document.getElementById('loginForm')?.addEventListener('submit', function(e) {
     const password = document.getElementById('loginPassword').value;
     
     signInWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
+        .then(async (userCredential) => {
             mostrarNotificacion('¡Bienvenido! Sesión iniciada correctamente', 'success');
             cerrarModal('loginModal');
             usuarioActual = userCredential.user;
+            esAdmin = await verificarSiEsAdmin(userCredential.user.email);
             cargarProductos();
         })
         .catch((error) => {
@@ -140,9 +159,11 @@ document.getElementById('logoutBtn')?.addEventListener('click', function() {
     signOut(auth).then(() => {
         mostrarNotificacion('Sesión cerrada', 'info');
         usuarioActual = null;
+        esAdmin = false;
         cambiarSeccion('tiendaSection', 'tiendaBtn');
         document.getElementById('loginBtn').style.display = 'inline-flex';
         document.getElementById('logoutBtn').style.display = 'none';
+        document.getElementById('adminBtn').style.display = 'none';
     });
 });
 
@@ -158,6 +179,10 @@ function configurarEventListeners() {
     document.getElementById('adminBtn').addEventListener('click', () => {
         if (!usuarioActual) {
             abrirModal('loginModal');
+            return;
+        }
+        if (!esAdmin) {
+            mostrarNotificacion('❌ No tienes permisos de administrador', 'error');
             return;
         }
         cambiarSeccion('adminSection', 'adminBtn');
@@ -205,7 +230,7 @@ function cerrarModal(modalId) {
 }
 
 // ========================================
-// GESTIÓN DE PRODUCTOS
+// GESTIÓN DE PRODUCTOS (SOLO ADMIN)
 // ========================================
 
 async function agregarProducto(e) {
@@ -213,6 +238,11 @@ async function agregarProducto(e) {
     
     if (!usuarioActual) {
         mostrarNotificacion('Debes iniciar sesión primero', 'error');
+        return;
+    }
+    
+    if (!esAdmin) {
+        mostrarNotificacion('❌ Solo los administradores pueden agregar productos', 'error');
         return;
     }
     
