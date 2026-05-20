@@ -1,0 +1,31 @@
+/* ========================================
+   CONFIGURACIÓN FIREBASE - NanyBeauty
+   Versión Moderna de Firebase (v9+)
+   ======================================== */
+
+// Importar Firebase
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+import { getDatabase, ref, push, set, onValue, query, orderByChild, equalTo, remove } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+
+// Tu configuración de Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyCLk5Bl3OW9g1F2se8sKlVaFQbF8djf1is",
+  authDomain: "nanybeauty-cb8c5.firebaseapp.com",
+  databaseURL: "https://nanybeauty-cb8c5-default-rtdb.firebaseio.com",
+  projectId: "nanybeauty-cb8c5",
+  storageBucket: "nanybeauty-cb8c5.appspot.com",
+  messagingSenderId: "668686913430",
+  appId: "1:668686913430:web:4719e0ee341cd7838d57b7",
+  measurementId: "G-0N95VVF8ZS"
+};
+
+// Inicializar Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const database = getDatabase(app);
+
+// Exportar para usar en otros archivos
+export { auth, database, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, ref, push, set, onValue, query, orderByChild, equalTo, remove };
+
+console.log('✅ Firebase configurado correctamente con NanyBeauty');
