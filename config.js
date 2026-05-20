@@ -1,12 +1,26 @@
 /* ========================================
    CONFIGURACIÓN FIREBASE - NanyBeauty
-   Versión Moderna de Firebase (v9+)
    ======================================== */
 
-// Importar Firebase
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-import { getDatabase, ref, push, set, onValue, query, orderByChild, equalTo, remove } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+import { 
+    getAuth, 
+    createUserWithEmailAndPassword, 
+    signInWithEmailAndPassword, 
+    signOut, 
+    onAuthStateChanged 
+} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+import { 
+    getDatabase, 
+    ref, 
+    push, 
+    set, 
+    onValue, 
+    query, 
+    orderByChild, 
+    equalTo, 
+    remove 
+} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
 
 // Tu configuración de Firebase
 const firebaseConfig = {
@@ -25,16 +39,18 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const database = getDatabase(app);
 
-// Exportar para usar en otros archivos
-export { auth, database, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, ref, push, set, onValue, query, orderByChild, equalTo, remove };
+// Función para verificar si es admin
+async function verificarSiEsAdmin(email) {
+    return new Promise((resolve) => {
+        const adminRef = ref(database, `admins/${email.replace(/\./g, '_')}`);
+        onValue(adminRef, (snapshot) => {
+            resolve(snapshot.exists());
+        }, { once: true });
+    });
+}
 
-console.log('✅ Firebase configurado correctamente con NanyBeauty');
-
-// ========================================
-// FUNCIONES DE ADMINISTRADOR
-// ========================================
-
-export async function hacerAdmin(email) {
+// Función para hacer admin
+async function hacerAdmin(email) {
     try {
         const adminRef = ref(database, `admins/${email.replace(/\./g, '_')}`);
         await set(adminRef, {
@@ -48,11 +64,24 @@ export async function hacerAdmin(email) {
     }
 }
 
-export async function verificarSiEsAdmin(email) {
-    return new Promise((resolve) => {
-        const adminRef = ref(database, `admins/${email.replace(/\./g, '_')}`);
-        onValue(adminRef, (snapshot) => {
-            resolve(snapshot.exists());
-        }, { once: true });
-    });
-}
+// Exportar todo
+export { 
+    auth, 
+    database, 
+    createUserWithEmailAndPassword, 
+    signInWithEmailAndPassword, 
+    signOut, 
+    onAuthStateChanged, 
+    ref, 
+    push, 
+    set, 
+    onValue, 
+    query, 
+    orderByChild, 
+    equalTo, 
+    remove,
+    verificarSiEsAdmin,
+    hacerAdmin
+};
+
+console.log('✅ Firebase configurado correctamente con NanyBeauty');
