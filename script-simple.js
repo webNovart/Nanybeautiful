@@ -11,6 +11,24 @@ let productosActuales = [];
 let esAdmin = false;
 
 // ========================================
+// FORMATO MONEDA COLOMBIANA
+// ========================================
+
+// Convierte "69.000" o "69000" → número 69000
+function parsearPrecioCOP(valor) {
+    return parseInt(String(valor).replace(/\./g, '').replace(/[^\d]/g, ''), 10) || 0;
+}
+
+// Convierte 69000 → "69.000"
+function formatearPrecioCOP(numero) {
+    return Number(numero).toLocaleString('es-CO', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    });
+}
+
+
+// ========================================
 // INICIALIZACIÓN
 // ========================================
 
@@ -229,7 +247,7 @@ async function agregarProducto(e) {
     const producto = {
         nombre: document.getElementById('nombre').value,
         categoria: document.getElementById('categoria').value,
-        precio: parseFloat(document.getElementById('precio').value),
+        precio: parsearPrecioCOP(document.getElementById('precio').value),
         descripcion: document.getElementById('descripcion').value,
         imagen: document.getElementById('imagen').value,
         linkCompra: document.getElementById('linkCompra').value,
@@ -297,7 +315,7 @@ function mostrarProductos(productos) {
                 <span class="producto-categoria">${producto.categoria}</span>
                 <h3 class="producto-nombre">${producto.nombre}</h3>
                 <p class="producto-descripcion">${producto.descripcion}</p>
-                <p class="producto-precio">$${producto.precio.toFixed(2)}</p>
+                <p class="producto-precio">$ ${formatearPrecioCOP(producto.precio)}</p>
                 <div class="producto-botones">
                     <button class="btn-detalles" onclick="abrirDetalleProducto('${producto.id}')">
                         <i class="fas fa-info-circle"></i> Detalles
@@ -319,7 +337,7 @@ function abrirDetalleProducto(productoId) {
     document.getElementById('detalleImagen').src = producto.imagen;
     document.getElementById('detalleNombre').textContent = producto.nombre;
     document.getElementById('detalleCategoria').textContent = producto.categoria;
-    document.getElementById('detallePrecio').textContent = `$${producto.precio.toFixed(2)}`;
+    document.getElementById('detallePrecio').textContent = `$${formatearPrecioCOP(producto.precio)}`;
     document.getElementById('detalleDescripcion').textContent = producto.descripcion;
     
     const linkBtn = document.getElementById('linkCompraBtn');
@@ -387,7 +405,7 @@ function cargarProductosAdmin() {
                 <div class="admin-producto-info">
                     <h3>${producto.nombre}</h3>
                     <p><strong>Categoría:</strong> ${producto.categoria}</p>
-                    <p><strong>Precio:</strong> $${producto.precio.toFixed(2)}</p>
+                    <p><strong>Precio:</strong> $${formatearPrecioCOP(producto.precio)}</p>
                     <p><strong>Link:</strong> <a href="${producto.linkCompra}" target="_blank" style="color: #d946a6;">Ver link</a></p>
                 </div>
                 <div class="admin-producto-actions">
@@ -411,7 +429,7 @@ function editarProducto(productoId) {
         
         document.getElementById('nombre').value = producto.nombre;
         document.getElementById('categoria').value = producto.categoria;
-        document.getElementById('precio').value = producto.precio;
+        document.getElementById('precio').value = formatearPrecioCOP(producto.precio);
         document.getElementById('descripcion').value = producto.descripcion;
         document.getElementById('imagen').value = producto.imagen;
         document.getElementById('linkCompra').value = producto.linkCompra;
@@ -427,7 +445,7 @@ function editarProducto(productoId) {
             const productoActualizado = {
                 nombre: document.getElementById('nombre').value,
                 categoria: document.getElementById('categoria').value,
-                precio: parseFloat(document.getElementById('precio').value),
+                precio: parsearPrecioCOP(document.getElementById('precio').value),
                 descripcion: document.getElementById('descripcion').value,
                 imagen: document.getElementById('imagen').value,
                 linkCompra: document.getElementById('linkCompra').value,
